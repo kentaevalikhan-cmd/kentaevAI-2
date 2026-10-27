@@ -17,5 +17,30 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
+  <input id="q" placeholder="Задай вопрос" />
+<button onclick="send()">Отправить</button>
+<p id="answer"></p>
+
+<script>
+async function ask(text) {
+  const r = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: [{ role: "user", content: text }] }),
+  });
+  const data = await r.json();
+  return data.content[0].text;
+}
+
+async function send() {
+  const out = document.getElementById("answer");
+  out.textContent = "Думаю...";
+  try {
+    out.textContent = await ask(document.getElementById("q").value);
+  } catch (e) {
+    out.textContent = "Ошибка, попробуй ещё раз";
+  }
+}
+</script>
 </html>
 
