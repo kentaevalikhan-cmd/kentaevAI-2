@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>KentaevAI 2.0 — The Quantum Neural AI</title>
+    <meta name="description" content="Experience KentaevAI 2.0 — next-generation autonomous AI with liquid glass interface, real-time multimodal reasoning, zero-latency execution, and interactive 3D particle landscape." />
+    <meta property="og:title" content="KentaevAI 2.0 — The Quantum Neural AI" />
+    <meta property="og:description" content="Experience KentaevAI 2.0 — next-generation autonomous AI with liquid glass interface, real-time multimodal reasoning, zero-latency execution, and interactive 3D particle landscape." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#050508] text-[#f5f1ea] antialiased selection:bg-teal-500/30 selection:text-teal-200 overflow-x-hidden">
+    <div id="root"></div>
+
+    <!-- Тестовый чат с Claude (работает через /api/chat) -->
+    <div id="test-chat" style="max-width:600px;margin:0 auto;padding:16px;font-family:sans-serif;color:#f5f1ea;">
+      <input id="q" placeholder="Задай вопрос" style="width:100%;box-sizing:border-box;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid #444;background:#111;color:#f5f1ea;" />
+      <button id="send-btn" style="padding:10px 16px;border-radius:8px;border:0;background:#14b8a6;color:#000;">Отправить</button>
+      <p id="answer" style="white-space:pre-wrap;"></p>
+    </div>
+
+    <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      async function ask(text) {
+        const r = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: [{ role: "user", content: text }] }),
+        });
+        const data = await r.json();
+        if (!r.ok) {
+          throw new Error((data.error && data.error.message) || "Ошибка сервера " + r.status);
+        }
+        return data.content[0].text;
+      }
+
+      async function send() {
+        const input = document.getElementById("q");
+        const out = document.getElementById("answer");
+        const btn = document.getElementById("send-btn");
+        const text = input.value.trim();
+        if (!text) return;
+        btn.disabled = true;
+        out.textContent = "Думаю...";
+        try {
+          out.textContent = await ask(text);
+        } catch (e) {
+          out.textContent = "Ошибка: " + e.message;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      document.getElementById("send-btn").addEventListener("click", send);
+      document.getElementById("q").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") send();
+      });
+    </script>
+  </body>
+</html>
