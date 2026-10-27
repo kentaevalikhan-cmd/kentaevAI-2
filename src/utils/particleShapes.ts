@@ -21,7 +21,7 @@ export const STAGES: StageData[] = [
     id: 'hero',
     number: '00',
     title: 'We power the minds of the future',
-    tagline: 'Discover the quantum neural architecture behind KentaevAI',
+    tagline: 'Discover the quantum neural architecture behind KentaevAI 2.0',
     description: 'An autonomous, sovereign intelligence engine engineered for real-time multimodal reasoning, instant synthesis, and zero-latency execution.',
     valueKeyword: 'THE QUANTUM HORIZON',
     metrics: [
@@ -70,7 +70,7 @@ export const STAGES: StageData[] = [
     number: '03',
     title: 'The Reps That Led to Pure Mastery',
     tagline: 'Trained on high-entropy reasoning benchmarks & real codebases',
-    description: 'Not merely summarizing the web—KentaevAI was forged across millions of synthetic adversarial dilemmas, refactoring real architectures, and solving non-trivial edge cases.',
+    description: 'Not merely summarizing the web—KentaevAI 2.0 was forged across millions of synthetic adversarial dilemmas, refactoring real architectures, and solving non-trivial edge cases.',
     valueKeyword: 'WE VALUE · MASTERY',
     metrics: [
       { label: 'Pre-Training FLOPs', value: '2.4e25' },
@@ -102,7 +102,7 @@ export const STAGES: StageData[] = [
     number: '05',
     title: 'The Independent Cognitive Core',
     tagline: 'Autonomous decomposition of ambiguous real-world intent',
-    description: 'Ask for the impossible: KentaevAI generates multi-stage plans, tests hypotheses, validates boundary cases, and produces battle-tested deliverables.',
+    description: 'Ask for the impossible: KentaevAI 2.0 generates multi-stage plans, tests hypotheses, validates boundary cases, and produces battle-tested deliverables.',
     valueKeyword: 'WE VALUE · INDEPENDENCE',
     metrics: [
       { label: 'Autonomous Depth', value: '64 Steps' },
@@ -118,7 +118,7 @@ export const STAGES: StageData[] = [
     number: '06',
     title: 'The Capacity to Simplify',
     tagline: 'Compressing extreme complexity into crystalline elegance',
-    description: 'Where others leave you with 5,000 unmaintainable lines of bloat, KentaevAI distills the essential core. Clean, readable, modular architecture with zero fluff.',
+    description: 'Where others leave you with 5,000 unmaintainable lines of bloat, KentaevAI 2.0 distills the essential core. Clean, readable, modular architecture with zero fluff.',
     valueKeyword: 'WE VALUE · SIMPLICITY',
     metrics: [
       { label: 'Code Conciseness', value: '-65% Slop' },
@@ -149,7 +149,7 @@ export const STAGES: StageData[] = [
     id: 'finale',
     number: '08',
     title: 'We power you, relentlessly, to win',
-    tagline: 'Build the products of tomorrow with KentaevAI today',
+    tagline: 'Build the products of tomorrow with KentaevAI 2.0 today',
     description: 'Step beyond legacy models. Experience quantum-fast reasoning, continuous multimodal perception, and fluid creative agency.',
     valueKeyword: 'THE FUTURE STARTS HERE',
     metrics: [

@@ -2,7 +2,7 @@
 
 @layer base {
   :root {
-    --bg-dark: #050508;
+    --bg-dark: #040407;
     --text-primary: #f5f1ea;
     --text-muted: rgba(245, 241, 234, 0.55);
     --accent-teal: #00f0ff;
@@ -10,12 +10,18 @@
     --border-subtle: rgba(255, 255, 255, 0.12);
   }
 
-  body {
+  html, body {
+    height: 100%;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
     background-color: var(--bg-dark);
     color: var(--text-primary);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y;
   }
 }
 
@@ -31,32 +37,114 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Glassmorphism surfaces */
-.glass-panel {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+/* ==========================================================================
+   LIQUID GLASS (Жидкое стекло) & Fluid Chromatic Refraction Design Tokens
+   ========================================================================== */
+.liquid-glass {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.03) 40%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  backdrop-filter: blur(28px) saturate(210%) brightness(1.08);
+  -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 24px rgba(255, 255, 255, 0.04),
+    0 20px 60px -15px rgba(0, 0, 0, 0.7);
 }
 
-.glass-pill {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+/* Liquid specular refraction highlight on top edge */
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 60% at 20% -10%,
+    rgba(255, 255, 255, 0.35),
+    transparent 65%
+  );
 }
 
-.glass-glow-button {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05));
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 10px 30px rgba(0, 240, 255, 0.15);
+/* Liquid fluid sheen animation */
+.liquid-glass::after {
+  content: "";
+  position: absolute;
+  inset: -100%;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 58%
+  );
+  transform: translateX(-100%);
+  animation: liquidSheen 9s ease-in-out infinite;
+}
+
+@keyframes liquidSheen {
+  0%, 45% {
+    transform: translateX(-100%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(100%) rotate(25deg);
+  }
+}
+
+/* Liquid Glass Interactive Button */
+.liquid-button {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 10px 30px rgba(0, 240, 255, 0.25);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.glass-glow-button:hover {
+.liquid-button:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.45);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 14px 40px rgba(0, 240, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 16px 40px rgba(0, 240, 255, 0.4);
+}
+
+.liquid-button:active {
+  transform: scale(0.97);
+}
+
+/* Chromatic Liquid iridescent border glow */
+.liquid-iridescent-glow {
+  background: linear-gradient(
+    120deg,
+    rgba(0, 240, 255, 0.2),
+    rgba(168, 85, 247, 0.2),
+    rgba(236, 72, 153, 0.2),
+    rgba(0, 240, 255, 0.2)
+  );
+  background-size: 300% 300%;
+  animation: liquidGradientFlow 8s ease infinite;
+}
+
+@keyframes liquidGradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* Custom subtle scrollbar */
@@ -77,6 +165,6 @@
 
 /* Ambient canvas background overlay */
 .vignette-overlay {
-  background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(5, 5, 8, 0.75) 100%);
+  background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(4, 4, 7, 0.78) 100%);
   pointer-events: none;
 }

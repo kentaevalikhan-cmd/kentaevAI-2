@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>KentaevAI 2.0 — The Quantum Neural AI</title>
+  <meta name="description" content="KentaevAI 2.0 — автономный искусственный интеллект в интерфейсе из жидкого стекла с интерактивным 3D-полем частиц.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #040407;
+      --text: #f5f1ea;
+      --text-muted: rgba(245, 241, 234, 0.55);
+      --accent: #00f0ff;
+      --line: rgba(255, 255, 255, 0.16);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: pan-y;
+    }
+    .font-disp { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ==========================================================================
+       ЖИДКОЕ СТЕКЛО (LIQUID GLASS) & FLUID SPECULAR REFRACTION
+       ========================================================================== */
+    .liquid-glass {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.13) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0.07) 100%);
+      backdrop-filter: blur(28px) saturate(210%) brightness(1.08);
+      -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(1.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 
+        inset 0 1.5px 0 rgba(255, 255, 255, 0.45),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 0 24px rgba(255, 255, 255, 0.04),
+        0 24px 60px rgba(0, 0, 0, 0.7);
+    }
+    .liquid-glass::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(120% 60% at 20% -10%, rgba(255, 255, 255, 0.35), transparent 65%);
+    }
+    .liquid-glass::after {
+      content: "";
+      position: absolute;
+      inset: -100%;
+      pointer-events: none;
+      background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.14) 50%, transparent 58%);
+      transform: translateX(-100%);
+      animation: liquidSheen 9s ease-in-out infinite;
+    }
+    @keyframes liquidSheen {
+      0%, 45% { transform: translateX(-100%) rotate(25deg); }
+      100% { transform: translateX(100%) rotate(25deg); }
+    }
+
+    .liquid-btn {
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 13px 28px;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      color: #fff;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.06) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 10px 30px rgba(0, 240, 255, 0.25);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .liquid-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.55);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 16px 40px rgba(0, 240, 255, 0.4);
+    }
+    .liquid-btn:active { transform: scale(0.97); }
+
+    .btn-glow {
+      background: linear-gradient(135deg, #00f0ff, #00b4d8);
+      color: #030305;
+      font-weight: 700;
+      border: 0;
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.5);
+    }
+
+    /* Vignette and layout */
+    #canvas-container { position: absolute; inset: 0; z-index: 1; }
+    .vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, transparent 40%, rgba(4, 4, 7, 0.78) 100%);
+    }
+    .stage-glow {
+      position: absolute;
+      top: 35%;
+      left: 30%;
+      width: 60vw;
+      height: 60vw;
+      max-width: 600px;
+      max-height: 600px;
+      border-radius: 50%;
+      filter: blur(140px);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 2;
+      transition: background 1s ease;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: calc(14px + env(safe-area-inset-top, 0px)) 24px 14px;
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 18px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #fff;
+    }
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #00f0ff;
+      box-shadow: 0 0 12px #00f0ff;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
+    .nav-links { display: flex; gap: 24px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; }
+    .nav-links a { color: rgba(255, 255, 255, 0.65); text-decoration: none; cursor: pointer; transition: color 0.2s; }
+    .nav-links a:hover { color: #00f0ff; }
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .icon-btn {
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .icon-btn:hover { background: rgba(255, 255, 255, 0.12); }
+
+    /* Slide Overlay Content */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: calc(85px + env(safe-area-inset-top, 0px)) 24px calc(20px + env(safe-area-inset-bottom, 0px));
+      max-width: 1300px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .hero-box {
+      pointer-events: auto;
+      max-width: 760px;
+      margin: auto 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      animation: fadeIn 0.8s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .kicker {
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .title {
+      font-size: clamp(28px, 6vw, 68px);
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+    }
+    .tagline {
+      font-size: clamp(15px, 2.5vw, 20px);
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 300;
+      line-height: 1.4;
+    }
+    .desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      padding: 14px 0 6px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      max-width: 480px;
+    }
+    .metric-val { font-size: 17px; font-weight: 700; color: #fff; }
+    .metric-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* Bottom Navigation Bar */
+    footer {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      border-radius: 20px;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .dots { display: flex; gap: 6px; align-items: center; }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .dot.active { width: 28px; background: #00f0ff; box-shadow: 0 0 10px #00f0ff; }
+
+    /* Interactive Terminal Modal / Bottom Sheet */
+    .terminal-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .terminal-modal.open { display: flex; }
+    .terminal-box {
+      width: 100%;
+      max-width: 780px;
+      height: 90vh;
+      max-height: 740px;
+      border-radius: 28px 28px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: sheetUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media(min-width: 768px) {
+      .terminal-modal { align-items: center; padding: 20px; }
+      .terminal-box { border-radius: 26px; height: 85vh; }
+    }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
+    .term-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .term-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .msg { max-width: 88%; padding: 12px 16px; border-radius: 16px; word-break: break-word; }
+    .msg.user { align-self: flex-end; background: linear-gradient(135deg, #00b4d8, #0077b6); color: #fff; }
+    .msg.ai { align-self: flex-start; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12); }
+    .term-chips {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 8px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .chip {
+      white-space: nowrap;
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .term-input {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .term-input input {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+    }
+    .term-input button {
+      min-width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      border: 0;
+      background: #00f0ff;
+      color: #030305;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media(max-width: 768px) {
+      .nav-links { display: none; }
+      .metrics { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .desc { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div class="vignette"></div>
+  <div class="stage-glow" id="stageGlow"></div>
+
+  <!-- Header with Liquid Glass -->
+  <header class="liquid-glass">
+    <div class="brand" onclick="goToStage(0)">
+      <div class="brand-dot"></div>
+      <span class="font-disp">KENTAEV<span class="font-mono" style="color:#00f0ff; font-size:12px; margin-left:4px;">.AI 2.0</span></span>
+    </div>
+
+    <nav class="nav-links font-mono">
+      <a onclick="goToStage(1)">Архитектура</a>
+      <a onclick="goToStage(2)">Точность</a>
+      <a onclick="goToStage(3)">Мастерство</a>
+      <a onclick="goToStage(4)">Память</a>
+      <a onclick="goToStage(6)">Лазер</a>
+      <a onclick="goToStage(7)">Купол</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="liquid-btn" onclick="downloadThisHtml()" style="padding: 9px 15px; font-size: 11px; gap: 6px; border-color: rgba(0, 240, 255, 0.4); background: rgba(0, 240, 255, 0.12); color: #00f0ff;">📥 Скачать index.html</button>
+      <button class="icon-btn font-mono" id="audioBtn" onclick="toggleAudio()" title="Звук">🔊 ON</button>
+      <button class="liquid-btn btn-glow" onclick="toggleTerminal(true)">Терминал 2.0</button>
+    </div>
+  </header>
+
+  <!-- Narrative Overlay -->
+  <main class="overlay">
+    <div></div>
+    <div class="hero-box" id="heroBox">
+      <div class="kicker font-mono" id="stageKicker">THE QUANTUM HORIZON · 00</div>
+      <h1 class="title font-disp" id="stageTitle">We power the minds of the future</h1>
+      <p class="tagline" id="stageTagline">Discover the quantum neural architecture behind KentaevAI 2.0</p>
+      <p class="desc" id="stageDesc">Суверенный искусственный интеллект нового поколения с мультимодальным тензорным ядром, нулевой задержкой и интерактивным квантовым полем частиц.</p>
+
+      <div class="metrics font-mono" id="stageMetrics">
+        <div><div class="metric-val">185 t/s</div><div class="metric-lbl">Скорость</div></div>
+        <div><div class="metric-val">42ms</div><div class="metric-lbl">Задержка</div></div>
+        <div><div class="metric-val">2.0M</div><div class="metric-lbl">Контекст</div></div>
+      </div>
+
+      <div style="padding-top: 8px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+        <button class="liquid-btn" id="ctaBtn" onclick="nextStage()">Исследовать архитектуру 2.0 →</button>
+        <button class="icon-btn font-mono" onclick="toggleTerminal(true)" style="padding:0 18px; width:auto; border-radius:99px; background:rgba(0,240,255,0.12); border-color:rgba(0,240,255,0.3); color:#00f0ff; font-weight:600;">⚡ Терминал 2.0</button>
+      </div>
+    </div>
+
+    <!-- Bottom Navigation Bar with Liquid Glass -->
+    <footer class="liquid-glass font-mono">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span id="counter" style="font-weight:600; color:#fff;">01 / 09</span>
+        <div class="dots" id="dotsContainer"></div>
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button class="icon-btn" onclick="prevStage()" title="Назад">←</button>
+        <button class="icon-btn" onclick="nextStage()" title="Вперёд">→</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Interactive Terminal 2.0 Modal -->
+  <div class="terminal-modal" id="terminalModal" onclick="if(event.target===this) toggleTerminal(false)">
+    <div class="terminal-box liquid-glass">
+      <div class="term-head">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="brand-dot"></div>
+          <b class="font-disp" style="font-size:15px;">KentaevAI 2.0 Terminal</b>
+          <span class="font-mono" style="font-size:10px; background:rgba(0,240,255,0.15); color:#00f0ff; padding:2px 8px; border-radius:6px;">LIVE</span>
+        </div>
+        <button class="icon-btn" onclick="toggleTerminal(false)" style="border:0; background:none; font-size:18px;">✕</button>
+      </div>
+
+      <div class="term-log" id="termLog">
+        <div class="msg ai">
+          Привет! Я <b>KentaevAI 2.0</b> — квантовая нейросеть в интерфейсе из жидкого стекла. Я управляю этим 3D полем частиц, умею рассуждать, писать код и выполнять команды.<br><br>
+          Попробуйте нажать кнопки ниже или ввести команду: «лазер», «синапс», «память», «купол».
+        </div>
+      </div>
+
+      <div class="term-chips font-mono">
+        <div class="chip" onclick="sendPrompt('Включи режим лазера')">⚡ Лазер</div>
+        <div class="chip" onclick="sendPrompt('Покажи нейронный синапс')">🧬 Синапс</div>
+        <div class="chip" onclick="sendPrompt('Переключись на горизонт памяти')">🌊 Память</div>
+        <div class="chip" onclick="sendPrompt('Активируй когнитивный вихрь')">🌪 Вихрь</div>
+        <div class="chip" onclick="sendPrompt('Защитный купол')">🌐 Купол</div>
+      </div>
+
+      <form class="term-input" onsubmit="handleSend(event)">
+        <input id="termInput" type="text" placeholder="Введите команду или вопрос к KentaevAI 2.0..." autocomplete="off">
+        <button type="submit">➤</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // --- STAGES METADATA ---
+    const STAGES = [
+      { id: 'hero', number: '00', title: 'We power the minds of the future', tagline: 'Discover the quantum neural architecture behind KentaevAI 2.0', desc: 'Автономный искусственный интеллект нового поколения с мультимодальным ядром и нулевой задержкой.', kicker: 'THE QUANTUM HORIZON', cta: 'Исследовать архитектуру 2.0 →', color: '#00f0ff', metrics: [['185 t/s', 'Скорость'], ['42ms', 'Задержка'], ['2.0M', 'Контекст']] },
+      { id: 'synapse', number: '01', title: 'The Unified Neural Synapse', tagline: 'Deep cross-modal cognition without fragmented adapters', desc: 'Текст, код, зрение и пространственные координаты синхронизированы в единый тензорный контур.', kicker: 'WE VALUE · COHERENCE', cta: 'Далее: Точность →', color: '#38bdf8', metrics: [['Vision & Code', 'Модальности'], ['99.98%', 'Синхронность'], ['-38%', 'Энтропия']] },
+      { id: 'precision', number: '02', title: 'The Hunger for Deterministic Precision', tagline: 'Beyond statistical guessing: verified mathematical rigor', desc: 'Строгая математическая верификация, формальная логика и самокоррекция без галлюцинаций.', kicker: 'WE VALUE · PRECISION', cta: 'Далее: Мастерство →', color: '#10b981', metrics: [['< 0.04%', 'Галлюцинации'], ['99.4%', 'Точность'], ['4x', 'Проверки']] },
+      { id: 'mastery', number: '03', title: 'The Reps That Led to Pure Mastery', tagline: 'Trained on high-entropy reasoning benchmarks & real codebases', desc: 'Сотни тысяч синтетических дилемм и рефакторинг боевых архитектур для безупречной интуиции.', kicker: 'WE VALUE · MASTERY', cta: 'Далее: Память →', color: '#ec4899', metrics: [['2.4e25', 'FLOPs'], ['94.8', 'MMLU'], ['92.6', 'HumanEval']] },
+      { id: 'horizon', number: '04', title: 'The Infinite Context Horizon', tagline: 'Persistent memory vectors that never forget your architectural rules', desc: 'Хранение гигантских репозиториев и диалогов с субмиллисекундным векторным кэшем.', kicker: 'WE VALUE · MEMORY', cta: 'Далее: Мышление →', color: '#f59e0b', metrics: [['2,000,000', 'Окно токенов'], ['100%', 'Точность'], ['0.4ms', 'Кэш']] },
+      { id: 'reasoning', number: '05', title: 'The Independent Cognitive Core', tagline: 'Autonomous decomposition of ambiguous real-world intent', desc: 'Автономная декомпозиция сложнейших технических задач на 64 шага вперёд с самопроверкой.', kicker: 'WE VALUE · INDEPENDENCE', cta: 'Далее: Простота →', color: '#14b8a6', metrics: [['64 Steps', 'Глубина'], ['99.1%', 'Коррекция'], ['Zero', 'Потери']] },
+      { id: 'simplification', number: '06', title: 'The Capacity to Simplify', tagline: 'Compressing extreme complexity into crystalline elegance', desc: 'Превращение хаоса в кристально чистую лаконичную архитектуру с нулевым лишним весом.', kicker: 'WE VALUE · SIMPLICITY', cta: 'Далее: Суверенитет →', color: '#ffffff', metrics: [['-65%', 'Лишний код'], ['99.9%', 'Точность'], ['0.0ms', 'Оверхед']] },
+      { id: 'sovereignty', number: '07', title: 'The Drive for Zero External Dependencies', tagline: 'Full data sovereignty and standalone deployment', desc: 'Полная изоляция от внешних телеметрических утечек. Локальный запуск на ваших мощностях.', kicker: 'WE VALUE · SOVEREIGNTY', cta: 'Финальный запуск →', color: '#a855f7', metrics: [['0.00', 'Утечки'], ['Docker', 'Локально'], ['100%', 'Изоляция']] },
+      { id: 'finale', number: '08', title: 'We power you, relentlessly, to win', tagline: 'Build the products of tomorrow with KentaevAI 2.0 today', desc: 'Создавайте революционные проекты вместе с флагманским интеллектом KentaevAI 2.0.', kicker: 'THE FUTURE STARTS HERE', cta: 'Запустить KentaevAI 2.0 ✦', color: '#00f0ff', metrics: [['140,000+', 'Пользователи'], ['82M', 'Запросы'], ['4.98', 'Рейтинг']] }
+    ];
+
+    let currentStage = 0;
+    const PARTICLE_COUNT = 24000;
+    let renderer, scene, camera, geometry, points, stagePositions = [];
+    let pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+
+    // --- 3D PARTICLE GENERATION ---
+    function init3D() {
+      const container = document.getElementById('canvas-container');
+      const isMobile = window.innerWidth < 768;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(isMobile ? 62 : 55, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, isMobile ? 6 : 10, isMobile ? 96 : 68);
+
+      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+      container.appendChild(renderer.domElement);
+
+      // Particle texture
+      const canvas = document.createElement('canvas');
+      canvas.width = 32; canvas.height = 32;
+      const ctx = canvas.getContext('2d');
+      const g = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+      g.addColorStop(0, '#fff');
+      g.addColorStop(0.3, 'rgba(255,255,255,0.8)');
+      g.addColorStop(0.7, 'rgba(255,255,255,0.15)');
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 32, 32);
+      const texture = new THREE.CanvasTexture(canvas);
+
+      generateTargetShapes();
+
+      geometry = new THREE.BufferGeometry();
+      const currentPos = new Float32Array(PARTICLE_COUNT * 3);
+      const colors = new Float32Array(PARTICLE_COUNT * 3);
+      for (let i = 0; i < PARTICLE_COUNT * 3; i++) currentPos[i] = stagePositions[0][i];
+
+      const c = new THREE.Color(STAGES[0].color);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
+      }
+
+      geometry.setAttribute('position', new THREE.BufferAttribute(currentPos, 3));
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: isMobile ? 2.3 : 1.85,
+        map: texture,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+
+      points = new THREE.Points(geometry, material);
+      scene.add(points);
+
+      window.addEventListener('resize', onResize);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('touchmove', onMove, { passive: true });
+      setupTouchSwipe();
+      animate();
+    }
+
+    function generateTargetShapes() {
+      // 0. Wave
+      const p0 = new Float32Array(PARTICLE_COUNT * 3);
+      const grid = Math.ceil(Math.sqrt(PARTICLE_COUNT));
+      const sp = 160 / grid;
+      let idx = 0;
+      for (let i = 0; i < grid && idx < PARTICLE_COUNT; i++) {
+        for (let j = 0; j < grid && idx < PARTICLE_COUNT; j++) {
+          const x = (i - grid/2) * sp, z = (j - grid/2) * sp - 10;
+          p0[idx*3] = x; p0[idx*3+1] = Math.sin(x*0.08)*4.5 + Math.cos(z*0.08)*3.5 - 4; p0[idx*3+2] = z;
+          idx++;
+        }
+      }
+      stagePositions.push(p0);
+
+      // 1. Helix Synapse
+      const p1 = new Float32Array(PARTICLE_COUNT * 3);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const t = (i / PARTICLE_COUNT) * Math.PI * 14;
+        const rad = 18; const h = ((i / PARTICLE_COUNT) - 0.5) * 85;
+        const strand = (i % 2 === 0) ? t : t + Math.PI;
+        p1[i*3] = Math.cos(strand) * rad + (Math.random()-0.5)*3;
+        p1[i*3+1] = h;
+        p1[i*3+2] = Math.sin(strand) * rad + (Math.random()-0.5)*3;
+      }
+      stagePositions.push(p1);
+
+      // 2. Gateway Arch
+      const p2 = new Float32Array(PARTICLE_COUNT * 3);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const u = ((i / PARTICLE_COUNT) * 2 - 1) * Math.PI * 0.85;
+        p2[i*3] = Math.sin(u) * 26 + (Math.random()-0.5)*3;
+        p2[i*3+1] = Math.cos(u) * 30 - 10;
+        p2[i*3+2] = (Math.random()-0.5)*26;
+      }
+      stagePositions.push(p2);
+
+      // 3. Binary Spheres
+      const p3 = new Float32Array(PARTICLE_COUNT * 3);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const cx = (i % 2 === 0) ? -22 : 22;
+        const th = Math.random() * Math.PI * 2;
+        const ph = Math.acos(2 * Math.random() - 1);
+        const r = Math.cbrt(Math.random()) * 16;
+        p3[i*3] = cx + r * Math.sin(ph) * Math.cos(th);
+        p3[i*3+1] = r * Math.sin(ph) * Math.sin(th);
+        p3[i*3+2] = r * Math.cos(ph);
+      }
+      stagePositions.push(p3);
+
+      // 4. Golden Ribbon
+      const p4 = new Float32Array(PARTICLE_COUNT * 3);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const t = (i / PARTICLE_COUNT) * 4 - 2;
+        p4[i*3] = t * 38;
+        p4[i*3+1] = Math.sin(t * 2.2) * 14 + (Math.random()-0.5)*4;
+        p4[i*3+2] = Math.cos(t * 1.8) * 22;
+      }
+      stagePositions.push(p4);
+
+      // 5. Vortex
+      const p5 = new Float32Array(PARTICLE_COUNT * 3);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const frac = i / PARTICLE_COUNT;
+        const rad = 3 + frac * 32;
+        const ang = frac * Math.PI * 24;
+        p5[i*3] = Math.cos(ang) * rad;
+        p5[i*3+1] = (frac - 0.5) * 70;
+        p5[i*3+2] = Math.sin(ang) * rad;
+      }
+      stagePositions.push(p5);
+
+      // 6. Laser Line
+      const p6 = new Float32Array(PARTICLE_COUNT * 3);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const x = ((i / PARTICLE_COUNT) - 0.5) * 130;
+        p6[i*3] = x;
+        p6[i*3+1] = (i % 3 === 0) ? 0.3 : Math.sin(x * 0.15) * 1.5;
+        p6[i*3+2] = (Math.random() - 0.5) * 2;
+      }
+      stagePositions.push(p6);
+
+      // 7. Sovereign Cage
+      const p7 = new Float32Array(PARTICLE_COUNT * 3);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const r = 24;
+        const th = (i / PARTICLE_COUNT) * Math.PI * 16;
+        const ph = ((i % 30) / 30) * Math.PI;
+        p7[i*3] = r * Math.sin(ph) * Math.cos(th) + (Math.random()-0.5)*2;
+        p7[i*3+1] = r * Math.sin(ph) * Math.sin(th) + (Math.random()-0.5)*2;
+        p7[i*3+2] = r * Math.cos(ph);
+      }
+      stagePositions.push(p7);
+
+      // 8. Finale Horizon
+      const p8 = new Float32Array(PARTICLE_COUNT * 3);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const d = Math.sqrt(Math.random()) * 65;
+        p8[i*3] = Math.cos(a) * d;
+        p8[i*3+1] = Math.sin(d * 0.15) * 6 - 5;
+        p8[i*3+2] = Math.sin(a) * d - 15;
+      }
+      stagePositions.push(p8);
+    }
+
+    function onMove(e) {
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      pointer.tx = (cx / window.innerWidth) * 2 - 1;
+      pointer.ty = -(cy / window.innerHeight) * 2 + 1;
+    }
+
+    function onResize() {
+      const w = window.innerWidth, h = window.innerHeight;
+      const port = w < h;
+      camera.aspect = w / h;
+      camera.fov = port ? 62 : 55;
+      camera.position.z = port ? 96 : 68;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+
+    let clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      pointer.x += (pointer.tx - pointer.x) * 0.05;
+      pointer.y += (pointer.ty - pointer.y) * 0.05;
+
+      const isPort = window.innerWidth < window.innerHeight;
+      camera.position.x = pointer.x * (isPort ? 4 : 6);
+      camera.position.y = (isPort ? 6 : 8) + pointer.y * (isPort ? 3.5 : 5);
+      camera.lookAt(0, 0, 0);
+
+      const target = stagePositions[currentStage];
+      const pArr = geometry.attributes.position.array;
+      const cArr = geometry.attributes.color.array;
+      const targetCol = new THREE.Color(STAGES[currentStage].color);
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const i3 = i * 3;
+        pArr[i3] += (target[i3] - pArr[i3]) * 0.065;
+        pArr[i3+1] += (target[i3+1] - pArr[i3+1]) * 0.065;
+        pArr[i3+2] += (target[i3+2] - pArr[i3+2]) * 0.065;
+
+        // Wave ripple
+        pArr[i3+1] += Math.sin(time * 1.5 + target[i3]*0.05) * 0.03;
+
+        // Color transition
+        cArr[i3] += (targetCol.r - cArr[i3]) * 0.05;
+        cArr[i3+1] += (targetCol.g - cArr[i3+1]) * 0.05;
+        cArr[i3+2] += (targetCol.b - cArr[i3+2]) * 0.05;
+      }
+      geometry.attributes.position.needsUpdate = true;
+      geometry.attributes.color.needsUpdate = true;
+
+      points.rotation.y = time * 0.035;
+      renderer.render(scene, camera);
+    }
+
+    // --- UI CONTROLS ---
+    function updateUI() {
+      const s = STAGES[currentStage];
+      document.getElementById('stageKicker').textContent = s.kicker + ' · ' + s.number;
+      document.getElementById('stageTitle').textContent = s.title;
+      document.getElementById('stageTagline').textContent = s.tagline;
+      document.getElementById('stageDesc').textContent = s.desc;
+      document.getElementById('ctaBtn').textContent = s.cta;
+      document.getElementById('counter').textContent = String(currentStage + 1).padStart(2, '0') + ' / ' + String(STAGES.length).padStart(2, '0');
+      document.getElementById('stageGlow').style.background = s.color;
+
+      const m = document.getElementById('stageMetrics');
+      m.innerHTML = s.metrics.map(x => `<div><div class="metric-val">${x[0]}</div><div class="metric-lbl">${x[1]}</div></div>`).join('');
+
+      renderDots();
+      playChime(440 + currentStage * 45);
+    }
+
+    function renderDots() {
+      const c = document.getElementById('dotsContainer');
+      c.innerHTML = STAGES.map((s, idx) => `<div class="dot ${idx === currentStage ? 'active' : ''}" onclick="goToStage(${idx})"></div>`).join('');
+    }
+
+    function goToStage(idx) {
+      currentStage = Math.max(0, Math.min(STAGES.length - 1, idx));
+      updateUI();
+    }
+    function nextStage() { goToStage(currentStage + 1); }
+    function prevStage() { goToStage(currentStage - 1); }
+
+    // --- TOUCH & SWIPE ---
+    function setupTouchSwipe() {
+      let sx = 0, sy = 0;
+      window.addEventListener('touchstart', e => {
+        if (e.target.closest('button, input, .terminal-box')) return;
+        sx = e.touches[0].clientX;
+        sy = e.touches[0].clientY;
+      }, { passive: true });
+
+      window.addEventListener('touchend', e => {
+        if (e.target.closest('button, input, .terminal-box')) return;
+        const dx = sx - e.changedTouches[0].clientX;
+        const dy = sy - e.changedTouches[0].clientY;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+          dx > 0 ? nextStage() : prevStage();
+        } else if (Math.abs(dy) > 50) {
+          dy > 0 ? nextStage() : prevStage();
+        }
+      }, { passive: true });
+
+      window.addEventListener('wheel', e => {
+        if (document.getElementById('terminalModal').classList.contains('open')) return;
+        if (Math.abs(e.deltaY) > 30) {
+          e.deltaY > 0 ? nextStage() : prevStage();
+        }
+      }, { passive: true });
+    }
+
+    // --- SOUND ENGINE (WEB AUDIO) ---
+    let audioCtx = null, isAudio = true;
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch(_) {}
+    }
+    function toggleAudio() {
+      isAudio = !isAudio;
+      document.getElementById('audioBtn').textContent = isAudio ? '🔊 ON' : '🔈 OFF';
+      if (isAudio) playChime(580);
+    }
+    function playChime(freq) {
+      if (!isAudio) return;
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime + 1.3);
+      } catch(_) {}
+    }
+
+    // --- TERMINAL ---
+    function toggleTerminal(open) {
+      document.getElementById('terminalModal').classList.toggle('open', open);
+      if (open) setTimeout(() => document.getElementById('termInput').focus(), 100);
+    }
+
+    function sendPrompt(text) {
+      document.getElementById('termInput').value = text;
+      handleSend();
+    }
+
+    function handleSend(e) {
+      if (e) e.preventDefault();
+      const inp = document.getElementById('termInput');
+      const txt = inp.value.trim();
+      if (!txt) return;
+
+      const log = document.getElementById('termLog');
+      log.innerHTML += `<div class="msg user">${txt}</div>`;
+      inp.value = '';
+      log.scrollTop = log.scrollHeight;
+
+      const low = txt.toLowerCase();
+      let reply = '🧠 Запрос обработан квантовым ядром KentaevAI 2.0. Тензорное состояние стабильно.';
+
+      if (low.includes('лазер') || low.includes('laser')) {
+        goToStage(6);
+        reply = '⚡ Фокусирую 24 000 квантовых частиц в сингулярный лазерный луч. Режим простоты активирован!';
+      } else if (low.includes('синапс') || low.includes('спирал')) {
+        goToStage(1);
+        reply = '🧬 Перестраиваю структуру в двойную спираль нейронного синапса KentaevAI 2.0.';
+      } else if (low.includes('памят') || low.includes('горизонт')) {
+        goToStage(4);
+        reply = '🌊 Разворачиваю бесконечную реку контекстной памяти (2.0M токенов).';
+      } else if (low.includes('вихрь') || low.includes('торнад')) {
+        goToStage(5);
+        reply = '🌪 Активирую когнитивный вихрь автономного планирования.';
+      } else if (low.includes('купол') || low.includes('клетк')) {
+        goToStage(7);
+        reply = '🌐 Разворачиваю геодезический защитный купол суверенной среды.';
+      } else if (low.includes('кто ты')) {
+        reply = 'Я KentaevAI 2.0 — флагманский автономный искусственный интеллект в оболочке из жидкого стекла. Скорость: 185+ t/s, нулевая задержка.';
+      }
+
+      setTimeout(() => {
+        log.innerHTML += `<div class="msg ai">${reply}</div>`;
+        log.scrollTop = log.scrollHeight;
+        playChime(660);
+      }, 350);
+    }
+
+    // Initialize on load
+    window.onload = () => {
+      init3D();
+      updateUI();
+    };
+  </script>
+</body>
+</html>
