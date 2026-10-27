@@ -1,0 +1,6 @@
+{
+  "name": "KentaevAI — The Quantum Neural AI",
+  "description": "Experience KentaevAI — next-generation autonomous AI with real-time multimodal reasoning, zero-latency execution, and interactive 3D particle landscape.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
